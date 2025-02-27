@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>德州扑克翻前胜率计算器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@1.6.5/dist/flowbite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.5/dist/flowbite.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --light-bg: #FFFFFF;
+            --dark-bg: #181818;
+            --light-text: #333333;
+            --dark-text: #F3F3F3;
+            --light-border: #E5E7EB;
+            --dark-border: #374151;
+            --light-input-bg: #F9FAFB;
+            --dark-input-bg: #1F2937;
+        }
+
+        /* 扑克牌样式 */
+        .card {
+            width: 60px;
+            height: 84px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-size: 18px;
+            position: relative;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-red {
+            color: #D10808;
+        }
+
+        .card-black {
+            color: #000000;
+        }
+
+        .card-selected {
+            box-shadow: 0 0 0 3px var(--primary-color);
+        }
+
+        .suit-icon {
+            font-size: 24px;
+            margin-right: 2px;
+        }
+
+        /* 深色模式适配 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: var(--dark-bg);
+                color: var(--dark-text);
+            }
+            .card {
+                background-color: #2D3748;
+                border-color: var(--dark-border);
+            }
+            .card-black {
+                color: #FFFFFF;
+            }
+            input, select, textarea {
+                background-color: var(--dark-input-bg) !important;
+                color: var(--dark-text) !important;
+                border-color: var(--dark-border) !important;
+            }
+            .bg-white {
+                background-color: var(--dark-bg) !important;
+            }
+            .text-gray-700, .text-gray-900 {
+                color: var(--dark-text) !important;
+            }
+            .border {
+                border-color: var(--dark-border) !important;
+            }
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 640px) {
+            .card {
+                width: 50px;
+                height: 70px;
+                font-size: 16px;
+                margin: 3px;
+            }
+            .suit-icon {
+                font-size: 20px;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 3px solid rgba(93, 92, 222, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid var(--primary-color);
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 突出显示的按钮样式 */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4A49B8;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">德州扑克翻前胜率计算器</h1>
+        
+        <!-- 手牌选择区域 -->
+        <div class="mb-8 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">选择您的手牌</h2>
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+                <div class="w-full sm:w-1/2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">第一张牌</label>
+                    <div class="flex gap-2">
+                        <select id="card1Rank" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/2 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="" selected disabled>牌面</option>
+                            <option value="A">A</option>
+                            <option value="K">K</option>
+                            <option value="Q">Q</option>
+                            <option value="J">J</option>
+                            <option value="T">10</option>
+                            <option value="9">9</option>
+                            <option value="8">8</option>
+                            <option value="7">7</option>
+                            <option value="6">6</option>
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                        </select>
+                        <select id="card1Suit" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/2 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="" selected disabled>花色</option>
+                            <option value="s">♠ 黑桃</option>
+                            <option value="h">♥ 红心</option>
+                            <option value="d">♦ 方块</option>
+                            <option value="c">♣ 梅花</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">第二张牌</label>
+                    <div class="flex gap-2">
+                        <select id="card2Rank" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/2 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="" selected disabled>牌面</option>
+                            <option value="A">A</option>
+                            <option value="K">K</option>
+                            <option value="Q">Q</option>
+                            <option value="J">J</option>
+                            <option value="T">10</option>
+                            <option value="9">9</option>
+                            <option value="8">8</option>
+                            <option value="7">7</option>
+                            <option value="6">6</option>
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                        </select>
+                        <select id="card2Suit" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/2 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="" selected disabled>花色</option>
+                            <option value="s">♠ 黑桃</option>
+                            <option value="h">♥ 红心</option>
+                            <option value="d">♦ 方块</option>
+                            <option value="c">♣ 梅花</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <div id="selectedCards" class="flex justify-center flex-wrap mb-4">
+                    <!-- 选中的牌将在这里显示 -->
+                    <div id="card1" class="card card-placeholder flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                        <span class="text-gray-400">选择</span>
+                    </div>
+                    <div id="card2" class="card card-placeholder flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                        <span class="text-gray-400">选择</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底池和位置信息 -->
+        <div class="mb-8 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">底池和位置信息</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="potSize" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">当前底池大小 (BB)</label>
+                    <input type="number" id="potSize" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="例如：2.5" min="0" step="0.5">
+                </div>
+                
+                <div>
+                    <label for="stackSize" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">您的筹码量 (BB)</label>
+                    <input type="number" id="stackSize" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="例如：100" min="0" step="0.5">
+                </div>
+                
+                <div>
+                    <label for="playersToAct" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">后置位待行动玩家数</label>
+                    <input type="number" id="playersToAct" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="例如：3" min="0" max="9">
+                </div>
+                
+                <div>
+                    <label for="previousAction" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">前置位玩家行动</label>
+                    <select id="previousAction" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="fold">弃牌</option>
+                        <option value="limp">跟注</option>
+                        <option value="raise1">加注 (2-3BB)</option>
+                        <option value="raise2">加注 (3-4BB)</option>
+                        <option value="raise3">加注 (4-6BB)</option>
+                        <option value="raise4">加注 (6-10BB)</option>
+                        <option value="raise5">加注 (10+BB)</option>
+                        <option value="allin">全压</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="position" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">您的位置</label>
+                    <select id="position" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="sb">小盲 (SB)</option>
+                        <option value="bb">大盲 (BB)</option>
+                        <option value="utg">枪口位 (UTG)</option>
+                        <option value="utg1">枪口位+1 (UTG+1)</option>
+                        <option value="utg2">枪口位+2 (UTG+2)</option>
+                        <option value="mp">中间位 (MP)</option>
+                        <option value="hj">劫手位 (HJ)</option>
+                        <option value="co">按钮前位 (CO)</option>
+                        <option value="btn">按钮位 (BTN)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="tableSize" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">牌桌人数</label>
+                    <select id="tableSize" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="1">1vs1 (单挑)</option>
+                        <option value="2">2人桌</option>
+                        <option value="3">3人桌</option>
+                        <option value="4">4人桌</option>
+                        <option value="5">5人桌</option>
+                        <option value="6">6人桌</option>
+                        <option value="7">7人桌</option>
+                        <option value="8">8人桌</option>
+                        <option value="9" selected>9人桌 (满桌)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 计算结果区域 -->
+        <div class="mb-8 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">胜率分析</h2>
+            
+            <div id="loadingResults" class="hidden text-center py-6">
+                <div class="loader"></div>
+                <span class="ml-2">正在计算中...</span>
+            </div>
+            
+            <div id="resultsContainer" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-700 dark:text-blue-300 mb-2">手牌强度</h3>
+                        <div id="handStrength" class="text-2xl font-bold text-blue-800 dark:text-blue-200">--</div>
+                        <div id="handCategory" class="text-sm text-blue-600 dark:text-blue-300 mt-1">--</div>
+                    </div>
+                    
+                    <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <h3 class="font-semibold text-green-700 dark:text-green-300 mb-2">预估胜率</h3>
+                        <div id="winProbability" class="text-2xl font-bold text-green-800 dark:text-green-200">--</div>
+                        <div id="confidenceLevel" class="text-sm text-green-600 dark:text-green-300 mt-1">--</div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">建议操作</h3>
+                    <div id="recommendedAction" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200">--</div>
+                </div>
+                
+                <div class="mt-4">
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">详细分析</h3>
+                    <div id="detailedAnalysis" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 text-sm">--</div>
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="hidden text-center py-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                请填写所有必填信息并选择正确的手牌
+            </div>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="flex justify-center gap-4">
+            <button id="calculateBtn" class="px-6 py-2.5 bg-blue-600 text-white font-medium text-base leading-tight rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">
+                计算胜率
+            </button>
+            <button id="resetBtn" class="px-6 py-2.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium text-base leading-tight rounded shadow-md hover:bg-gray-300 dark:hover:bg-gray-500 hover:shadow-lg focus:bg-gray-300 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-gray-400 active:shadow-lg transition duration-150 ease-in-out">
+                重置
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 根据牌桌人数调整位置选项
+            const tableSizeSelect = document.getElementById('tableSize');
+            const positionSelect = document.getElementById('position');
+            
+            // 初始化加载时设置正确的位置选项
+            function initializePositionOptions() {
+                const tableSize = tableSizeSelect.value;
+                // 清除现有选项
+                while (positionSelect.options.length > 0) {
+                    positionSelect.remove(0);
+                }
+                
+                // 根据牌桌人数添加适当的位置
+                if (tableSize === '1') {
+                    // 单挑模式只有两个位置
+                    addOption(positionSelect, 'btn', '按钮位/小盲 (BTN/SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    // 默认选择按钮位
+                    positionSelect.selectedIndex = 0;
+                } else if (tableSize === '2') {
+                    // 2人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                } else if (tableSize === '3') {
+                    // 3人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '4') {
+                    // 4人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '5') {
+                    // 5人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '6') {
+                    // 6人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'mp', '中间位 (MP)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else {
+                    // 7-9人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'utg1', '枪口位+1 (UTG+1)');
+                    addOption(positionSelect, 'utg2', '枪口位+2 (UTG+2)');
+                    addOption(positionSelect, 'mp', '中间位 (MP)');
+                    addOption(positionSelect, 'hj', '劫手位 (HJ)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                }
+            }
+            
+            // 页面加载时初始化位置选项
+            initializePositionOptions();
+            
+            tableSizeSelect.addEventListener('change', function() {
+                const tableSize = tableSizeSelect.value;
+                const currentPosition = positionSelect.value;
+                
+                // 保存当前选项，稍后尝试恢复到相似位置
+                let newPosition = currentPosition;
+                
+                // 清除现有选项
+                while (positionSelect.options.length > 0) {
+                    positionSelect.remove(0);
+                }
+                
+                // 根据牌桌人数添加适当的位置
+                if (tableSize === '1') {
+                    // 单挑模式只有两个位置
+                    addOption(positionSelect, 'btn', '按钮位/小盲 (BTN/SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    // 默认选择按钮位
+                    newPosition = 'btn';
+                } else if (tableSize === '2') {
+                    // 2人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                } else if (tableSize === '3') {
+                    // 3人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '4') {
+                    // 4人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '5') {
+                    // 5人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else if (tableSize === '6') {
+                    // 6人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'mp', '中间位 (MP)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                } else {
+                    // 7-9人桌
+                    addOption(positionSelect, 'sb', '小盲 (SB)');
+                    addOption(positionSelect, 'bb', '大盲 (BB)');
+                    addOption(positionSelect, 'utg', '枪口位 (UTG)');
+                    addOption(positionSelect, 'utg1', '枪口位+1 (UTG+1)');
+                    addOption(positionSelect, 'utg2', '枪口位+2 (UTG+2)');
+                    addOption(positionSelect, 'mp', '中间位 (MP)');
+                    addOption(positionSelect, 'hj', '劫手位 (HJ)');
+                    addOption(positionSelect, 'co', '按钮前位 (CO)');
+                    addOption(positionSelect, 'btn', '按钮位 (BTN)');
+                }
+                
+                // 尝试恢复到相似位置
+                for (let i = 0; i < positionSelect.options.length; i++) {
+                    if (positionSelect.options[i].value === newPosition) {
+                        positionSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            });
+            
+            // 辅助函数：添加选项到select元素
+            function addOption(selectElement, value, text) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                selectElement.add(option);
+            }
+            // 获取DOM元素
+            const card1RankSelect = document.getElementById('card1Rank');
+            const card1SuitSelect = document.getElementById('card1Suit');
+            const card2RankSelect = document.getElementById('card2Rank');
+            const card2SuitSelect = document.getElementById('card2Suit');
+            const card1Div = document.getElementById('card1');
+            const card2Div = document.getElementById('card2');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const loadingResults = document.getElementById('loadingResults');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // 定义牌面和花色
+            const suits = {
+                's': {symbol: '♠', name: '黑桃', color: 'black'},
+                'h': {symbol: '♥', name: '红心', color: 'red'},
+                'd': {symbol: '♦', name: '方块', color: 'red'},
+                'c': {symbol: '♣', name: '梅花', color: 'black'}
+            };
+            
+            const cardValues = {
+                'A': 14, 'K': 13, 'Q': 12, 'J': 11, 'T': 10, '9': 9, '8': 8,
+                '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
+            };
+            
+            // 手牌强度表(预定义的胜率数据)，根据牌型分类
+            const handStrengthData = {
+                'premium': {
+                    'AA': 85.2, 'KK': 82.4, 'QQ': 80.1, 'AKs': 67.1, 'JJ': 77.5,
+                    'AQs': 66.1, 'AKo': 65.4, 'TT': 75.1, 'AJs': 65.3
+                },
+                'strong': {
+                    'AQo': 64.5, 'ATs': 64.7, 'AJo': 63.6, '99': 72.1, 'KQs': 63.4,
+                    '88': 69.1, 'ATo': 62.9, 'KJs': 62.8, 'A9s': 62.6, 'KQo': 61.8
+                },
+                'medium': {
+                    'A8s': 61.5, 'KTs': 61.9, '77': 66.2, 'KJo': 60.8, 'A7s': 60.8,
+                    'QJs': 61.1, 'A9o': 60.5, 'A5s': 60.5, 'KTo': 59.9, '66': 63.3,
+                    'A6s': 59.9, 'A4s': 60.0, 'QTs': 60.3, 'A8o': 59.3, 'A3s': 59.6
+                },
+                'weak': {
+                    'QJo': 59.1, 'K9s': 59.3, 'A7o': 58.7, 'A2s': 59.0, '55': 60.3,
+                    'QTo': 58.3, 'A5o': 58.0, 'A6o': 57.8, 'A4o': 57.5, 'K8s': 58.2,
+                    'JTs': 58.9, 'K9o': 57.2, 'A3o': 57.1, 'Q9s': 57.9, 'A2o': 56.6
+                },
+                'marginal': {
+                    '44': 54.0, 'K7s': 57.1, 'JTo': 56.9, 'K6s': 56.5, 'Q8s': 56.8,
+                    'K8o': 56.1, 'J9s': 56.2, '33': 51.0, 'K5s': 56.0, 'Q9o': 55.8,
+                    'K7o': 55.0, 'K4s': 55.5, 'Q7s': 55.2, 'K6o': 54.4, 'K3s': 55.0
+                }
+            };
+            
+            // 预定义的建议操作和详细分析数据
+            const actionRecommendations = {
+                'premium': {
+                    'raise': '从任何位置加注，面对3bet通常应4bet或全压',
+                    'call': '考虑慢打诱导，但要警惕翻牌后的棘手情况',
+                    'analysis': '这是非常强力的起手牌，你应该积极游戏并建立底池。不要害怕面对重注，你的手牌有很高的胜率。'
+                },
+                'strong': {
+                    'raise': '从中后位置加注，早位置可以考虑加注或跟注',
+                    'call': '可以跟注对手的加注，但要警惕多人底池',
+                    'analysis': '这是强力的起手牌，但在遇到明显阻力时要谨慎。尝试控制底池大小，除非击中强组合。'
+                },
+                'medium': {
+                    'raise': '从晚位置加注，或在无人进池的情况下从中间位置加注',
+                    'call': '可以在有利位置跟注一个加注，但不建议跟注多个加注',
+                    'analysis': '这是合理的起手牌，但价值主要来自于位置优势和翻牌后的潜力。如果翻牌不利，要准备弃牌。'
+                },
+                'weak': {
+                    'raise': '仅从按钮位或盲注位可以考虑偷盲',
+                    'call': '在有很好的底池赔率时可以跟注一个加注，通常只在晚位置',
+                    'analysis': '这手牌相对较弱，主要适合寻找便宜看翻牌的机会。如果遇到强阻力或翻牌不协调，准备放弃手牌。'
+                },
+                'marginal': {
+                    'raise': '一般不建议加注，除非在偷盲位置且桌面紧',
+                    'call': '只在大盲位有极好赔率时跟注',
+                    'analysis': '这是边缘手牌，通常应该弃掉，除非你在大盲位置且有很好的底池赔率，或者尝试从晚位置偷盲。'
+                }
+            };
+            
+            // 更新显示选中的牌
+            function updateSelectedCard(cardDiv, rank, suit) {
+                if (!rank || !suit) return;
+                
+                const suitInfo = suits[suit];
+                cardDiv.className = `card card-${suitInfo.color} card-selected`;
+                cardDiv.innerHTML = `
+                    <span>${rank === 'T' ? '10' : rank}</span>
+                    <span class="suit-icon">${suitInfo.symbol}</span>
+                `;
+            }
+            
+            // 事件监听器
+            card1RankSelect.addEventListener('change', function() {
+                if (card1RankSelect.value && card1SuitSelect.value) {
+                    updateSelectedCard(card1Div, card1RankSelect.value, card1SuitSelect.value);
+                }
+            });
+            
+            card1SuitSelect.addEventListener('change', function() {
+                if (card1RankSelect.value && card1SuitSelect.value) {
+                    updateSelectedCard(card1Div, card1RankSelect.value, card1SuitSelect.value);
+                }
+            });
+            
+            card2RankSelect.addEventListener('change', function() {
+                if (card2RankSelect.value && card2SuitSelect.value) {
+                    updateSelectedCard(card2Div, card2RankSelect.value, card2SuitSelect.value);
+                }
+            });
+            
+            card2SuitSelect.addEventListener('change', function() {
+                if (card2RankSelect.value && card2SuitSelect.value) {
+                    updateSelectedCard(card2Div, card2RankSelect.value, card2SuitSelect.value);
+                }
+            });
+            
+            // 重置按钮事件监听器
+            resetBtn.addEventListener('click', function() {
+                // 重置选择
+                card1RankSelect.selectedIndex = 0;
+                card1SuitSelect.selectedIndex = 0;
+                card2RankSelect.selectedIndex = 0;
+                card2SuitSelect.selectedIndex = 0;
+                
+                // 重置牌的显示
+                card1Div.className = 'card card-placeholder flex items-center justify-center bg-gray-100 dark:bg-gray-700';
+                card1Div.innerHTML = '<span class="text-gray-400">选择</span>';
+                card2Div.className = 'card card-placeholder flex items-center justify-center bg-gray-100 dark:bg-gray-700';
+                card2Div.innerHTML = '<span class="text-gray-400">选择</span>';
+                
+                // 重置其他输入
+                document.getElementById('potSize').value = '';
+                document.getElementById('stackSize').value = '';
+                document.getElementById('playersToAct').value = '';
+                document.getElementById('previousAction').selectedIndex = 0;
+                document.getElementById('position').selectedIndex = 0;
+                document.getElementById('tableSize').selectedIndex = 2;
+                
+                // 隐藏结果
+                resultsContainer.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+            });
+            
+            // 计算胜率按钮事件监听器
+            calculateBtn.addEventListener('click', function() {
+                // 验证输入
+                const card1Rank = card1RankSelect.value;
+                const card1Suit = card1SuitSelect.value;
+                const card2Rank = card2RankSelect.value;
+                const card2Suit = card2SuitSelect.value;
+                const potSize = document.getElementById('potSize').value;
+                const stackSize = document.getElementById('stackSize').value;
+                const playersToAct = document.getElementById('playersToAct').value;
+                
+                if (!card1Rank || !card1Suit || !card2Rank || !card2Suit || !potSize || !stackSize || !playersToAct) {
+                    errorMessage.classList.remove('hidden');
+                    resultsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                // 隐藏错误，显示加载
+                errorMessage.classList.add('hidden');
+                loadingResults.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                
+                // 模拟计算延迟
+                setTimeout(function() {
+                    calculateHandStrength(card1Rank, card1Suit, card2Rank, card2Suit);
+                    loadingResults.classList.add('hidden');
+                    resultsContainer.classList.remove('hidden');
+                }, 1200);
+            });
+            
+            // 计算手牌强度和胜率
+            function calculateHandStrength(card1Rank, card1Suit, card2Rank, card2Suit) {
+                // 排序牌面以获得标准的手牌符号（较大的牌在前）
+                let isSuited = card1Suit === card2Suit;
+                let isConnector = Math.abs(cardValues[card1Rank] - cardValues[card2Rank]) === 1;
+                let isPair = card1Rank === card2Rank;
+                
+                // 确定手牌符号
+                let handSymbol = '';
+                if (cardValues[card1Rank] >= cardValues[card2Rank]) {
+                    handSymbol = card1Rank + card2Rank + (isSuited ? 's' : 'o');
+                    if (isPair) handSymbol = card1Rank + card1Rank;
+                } else {
+                    handSymbol = card2Rank + card1Rank + (isSuited ? 's' : 'o');
+                    if (isPair) handSymbol = card2Rank + card2Rank;
+                }
+                
+                // 查找手牌强度分类
+                let handCategory = '';
+                let handStrength = 0;
+                let categoryFound = false;
+                
+                for (const category in handStrengthData) {
+                    if (handSymbol in handStrengthData[category]) {
+                        handCategory = category;
+                        handStrength = handStrengthData[category][handSymbol];
+                        categoryFound = true;
+                        break;
+                    }
+                }
+                
+                // 如果手牌没有直接匹配，进行估算
+                if (!categoryFound) {
+                    // 基于牌面和是否同花、连牌等特征估算强度
+                    if (isPair) {
+                        const value = cardValues[card1Rank];
+                        if (value >= 11) handCategory = 'premium';  // JJ+
+                        else if (value >= 9) handCategory = 'strong';  // 99, TT
+                        else if (value >= 7) handCategory = 'medium';  // 77, 88
+                        else if (value >= 5) handCategory = 'weak';    // 55, 66
+                        else handCategory = 'marginal';  // 22, 33, 44
+                        
+                        // 估算胜率
+                        handStrength = 50 + (value * 1.8);
+                    } else if (isSuited) {
+                        const highCard = Math.max(cardValues[card1Rank], cardValues[card2Rank]);
+                        const lowCard = Math.min(cardValues[card1Rank], cardValues[card2Rank]);
+                        const gap = highCard - lowCard;
+                        
+                        if (highCard >= 13 && lowCard >= 10) handCategory = 'premium';  // AK, AQ, KQ
+                        else if (highCard >= 12 && lowCard >= 9) handCategory = 'strong';  // AJ, KJ, QJ
+                        else if (highCard >= 11 && lowCard >= 8 && gap <= 4) handCategory = 'medium';
+                        else if (highCard >= 10 && lowCard >= 6 && gap <= 4) handCategory = 'weak';
+                        else handCategory = 'marginal';
+                        
+                        // 估算胜率
+                        handStrength = 45 + (highCard * 1.2) - (gap * 1.5);
+                    } else {  // 不同花
+                        const highCard = Math.max(cardValues[card1Rank], cardValues[card2Rank]);
+                        const lowCard = Math.min(cardValues[card1Rank], cardValues[card2Rank]);
+                        const gap = highCard - lowCard;
+                        
+                        if (highCard >= 14 && lowCard >= 11) handCategory = 'premium';  // AK
+                        else if (highCard >= 14 && lowCard >= 10) handCategory = 'strong';  // AQ, AJ
+                        else if (highCard >= 13 && lowCard >= 10 && gap <= 3) handCategory = 'medium';
+                        else if (highCard >= 12 && lowCard >= 9 && gap <= 3) handCategory = 'weak';
+                        else handCategory = 'marginal';
+                        
+                        // 估算胜率
+                        handStrength = 42 + (highCard * 1.1) - (gap * 2.0);
+                    }
+                    
+                    // 确保胜率在合理范围内
+                    handStrength = Math.min(Math.max(handStrength, 40), 90);
+                }
+                
+                // 调整胜率基于位置和牌桌大小
+                const position = document.getElementById('position').value;
+                const tableSize = document.getElementById('tableSize').value;
+                const previousAction = document.getElementById('previousAction').value;
+                const playersToAct = parseInt(document.getElementById('playersToAct').value);
+                
+                // 根据位置调整胜率
+                let positionAdjustment = 0;
+                if (['btn', 'co'].includes(position)) {
+                    positionAdjustment = 3;  // 晚位置加成
+                } else if (['mp', 'hj'].includes(position)) {
+                    positionAdjustment = 1;  // 中间位置小加成
+                } else if (['utg', 'utg1', 'utg2'].includes(position)) {
+                    positionAdjustment = -2;  // 早位置减成
+                } else if (position === 'bb') {
+                    positionAdjustment = -1;  // 大盲位置
+                }
+                
+                // 根据待行动玩家数调整胜率
+                const playersPenalty = playersToAct * -1.5;  // 每多一个待行动玩家减少1.5%胜率
+                
+                // 根据前置位玩家行动调整胜率
+                let actionAdjustment = 0;
+                if (previousAction.startsWith('raise')) {
+                    const raiseSize = parseInt(previousAction.slice(-1));
+                    actionAdjustment = -raiseSize;  // 根据加注大小减少胜率
+                } else if (previousAction === 'allin') {
+                    actionAdjustment = -10;  // 面对全压大幅降低胜率
+                }
+                
+                // 根据牌桌大小调整胜率
+                let tableSizeAdjustment = 0;
+                if (tableSize === '1') {
+                    tableSizeAdjustment = 15; // 1vs1单挑模式胜率大幅提升
+                } else if (tableSize === '2') {
+                    tableSizeAdjustment = 10; // 2人桌胜率提升
+                } else if (tableSize === '3') {
+                    tableSizeAdjustment = 7;  // 3人桌胜率提升
+                } else if (tableSize === '4') {
+                    tableSizeAdjustment = 5;  // 4人桌胜率提升
+                } else if (tableSize === '5') {
+                    tableSizeAdjustment = 4;  // 5人桌胜率提升
+                } else if (tableSize === '6') {
+                    tableSizeAdjustment = 3;  // 6人桌胜率提升
+                } else if (tableSize === '7') {
+                    tableSizeAdjustment = 2;  // 7人桌胜率提升
+                } else if (tableSize === '8') {
+                    tableSizeAdjustment = 1;  // 8人桌胜率小提升
+                } else {
+                    tableSizeAdjustment = 0;  // 9人桌（满桌）不调整
+                }
+                
+                // 计算最终胜率
+                let finalWinRate = handStrength + positionAdjustment + playersPenalty + actionAdjustment + tableSizeAdjustment;
+                finalWinRate = Math.max(Math.min(finalWinRate, 95), 20);  // 限制在20%-95%范围内
+                
+                // 更新UI
+                document.getElementById('handStrength').textContent = isPair ? 
+                    `${card1Rank}${card1Rank}` : 
+                    `${card1Rank}${card2Rank}${isSuited ? '同花' : '不同花'}`;
+                
+                const categoryNames = {
+                    'premium': '极强',
+                    'strong': '强力',
+                    'medium': '中等',
+                    'weak': '较弱',
+                    'marginal': '边缘'
+                };
+                document.getElementById('handCategory').textContent = `手牌类型: ${categoryNames[handCategory]}`;
+                document.getElementById('winProbability').textContent = `${finalWinRate.toFixed(1)}%`;
+                
+                // 计算置信度
+                let confidence = "中";
+                if (categoryFound) {
+                    confidence = "高";
+                } else if (['marginal', 'weak'].includes(handCategory)) {
+                    confidence = "低";
+                }
+                document.getElementById('confidenceLevel').textContent = `置信度: ${confidence}`;
+                
+                // 获取底池大小和筹码量，计算底池赔率
+                const potSize = parseFloat(document.getElementById('potSize').value);
+                const stackSize = parseFloat(document.getElementById('stackSize').value);
+                const potOdds = potSize > 0 ? (potSize / stackSize).toFixed(2) : "N/A";
+                
+                // 生成建议操作
+                let recommendedAction = '';
+                let detailedAnalysis = '';
+                
+                // 根据手牌强度和位置提供建议
+                if (handCategory === 'premium') {
+                    if (['btn', 'co', 'hj', 'mp'].includes(position)) {
+                        recommendedAction = '加注 3-4BB，面对3bet考虑4bet或全压';
+                    } else {
+                        recommendedAction = '加注 2.5-3BB，面对3bet考虑4bet';
+                    }
+                    detailedAnalysis = actionRecommendations.premium.analysis;
+                } else if (handCategory === 'strong') {
+                    if (['btn', 'co', 'hj'].includes(position)) {
+                        recommendedAction = '加注 2.5-3BB，面对3bet通常可以跟注';
+                    } else if (['mp', 'utg2'].includes(position)) {
+                        recommendedAction = '加注 2.5BB，面对重注谨慎评估';
+                    } else if (['utg', 'utg1'].includes(position)) {
+                        recommendedAction = '考虑弃牌或小加注，位置不利';
+                    } else {
+                        recommendedAction = '加注或跟注，取决于前面的行动';
+                    }
+                    detailedAnalysis = actionRecommendations.strong.analysis;
+                } else if (handCategory === 'medium') {
+                    if (['btn', 'co'].includes(position)) {
+                        recommendedAction = '加注 2.5BB尝试偷盲或建立底池';
+                    } else if (['hj', 'mp'].includes(position) && playersToAct <= 3) {
+                        recommendedAction = '考虑加注，但要准备面对3bet时弃牌';
+                    } else if (['bb', 'sb'].includes(position) && previousAction === 'limp') {
+                        recommendedAction = '加注隔离或跟注看翻牌';
+                    } else {
+                        recommendedAction = '通常应该弃牌，除非有特别有利的情况';
+                    }
+                    detailedAnalysis = actionRecommendations.medium.analysis;
+                } else if (handCategory === 'weak') {
+                    if (['btn'].includes(position) && playersToAct <= 2) {
+                        recommendedAction = '可以尝试偷盲，面对抵抗迅速弃牌';
+                    } else if (position === 'bb' && previousAction === 'limp') {
+                        recommendedAction = '免费看翻牌或小加注测试';
+                    } else {
+                        recommendedAction = '弃牌，等待更好的机会';
+                    }
+                    detailedAnalysis = actionRecommendations.weak.analysis;
+                } else {  // marginal
+                    if (position === 'bb' && previousAction === 'limp') {
+                        recommendedAction = '查牌看翻牌';
+                    } else if (position === 'btn' && playersToAct <= 2 && tableSize === '6') {
+                        recommendedAction = '考虑偷盲，但面对任何抵抗弃牌';
+                    } else {
+                        recommendedAction = '弃牌';
+                    }
+                    detailedAnalysis = actionRecommendations.marginal.analysis;
+                }
+                
+                // 根据前置玩家行动调整建议
+                if (previousAction.startsWith('raise') || previousAction === 'allin') {
+                    if (handCategory === 'premium') {
+                        recommendedAction = previousAction === 'allin' ? 
+                            '根据底池赔率考虑跟注全压' : '3bet或跟注，视加注大小而定';
+                    } else if (handCategory === 'strong') {
+                        recommendedAction = previousAction === 'allin' ? 
+                            '通常弃牌，除非底池赔率极佳' : '通常跟注一次看翻牌，面对过大加注考虑弃牌';
+                    } else {
+                        recommendedAction = '弃牌';
+                    }
+                }
+                
+                // 添加底池赔率和玩家位置的分析
+                detailedAnalysis += `\n\n当前底池赔率约为 1:${potOdds}。`;
+                detailedAnalysis += `\n从${document.getElementById('position').options[document.getElementById('position').selectedIndex].text}位置，`;
+                detailedAnalysis += `有${playersToAct}个玩家在你之后行动，`;
+                
+                if (previousAction === 'fold') {
+                    detailedAnalysis += '前面玩家已弃牌，你可以更激进。';
+                } else if (previousAction === 'limp') {
+                    detailedAnalysis += '前面玩家已跟注，你可以考虑加注隔离或跟注一起看翻牌。';
+                } else if (previousAction.startsWith('raise')) {
+                    detailedAnalysis += '前面已有加注，需要更谨慎评估手牌价值。';
+                } else if (previousAction === 'allin') {
+                    detailedAnalysis += '面对全压，只有最强的手牌才能考虑跟注。';
+                }
+                
+                // 更新建议操作和详细分析
+                document.getElementById('recommendedAction').textContent = recommendedAction;
+                document.getElementById('detailedAnalysis').textContent = detailedAnalysis;
+            }
+        });
+    </script>
+</body>
+</html>
